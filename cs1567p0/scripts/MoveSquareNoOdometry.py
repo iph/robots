@@ -1,4 +1,6 @@
 from CommandUtils import move_forward, stop_command, rotate_command
+import sys
+
 if __name__ == "__main__":
     rotate_amount = 90
     if len(sys.argv) > 1:
