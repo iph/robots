@@ -2,24 +2,13 @@
 import rospy
 from geometry_msgs.msg import Twist
 from cs1567p0.srv import *
-
-def rosies_to_meters(rosies):
-    return 1.2 * rosies
-
-def meters_to_rosies(meters):
-    return 1.2 * meters
-
-def move_forward(dist_in_meters, seconds):
-    command = Twist()
-    try:
-        send_command = rospy.ServiceProxy('constant_command', ConstantCommand)
-        command.linear.x = meters_to_rosies(dist_in_meters / seconds)
-        response = send_command(command)
-        rospy.sleep(seconds)
-        command.linear.x = 0
-    except rospy.ServiceException, e:
-        print "Service call failed: %s"%e
+from CommandUtils import move_forward, init_commands
 
 if __name__ == "__main__":
+   init_commands("MoveForwardNoOdometry")
    move_forward(1.0, 7.0)
-   pass
+   stop_command()
+
+
+
+
