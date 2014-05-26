@@ -34,7 +34,7 @@ def move_forward(dist_in_meters, seconds):
         print "Service call failed: %s"%e
 
 def move_circle(dist_in_meters):
-    seconds = 17.95
+    seconds = 18.05
     command = Twist()
     try:
         command.linear.x = meters_to_rosies(dist_in_meters, seconds)

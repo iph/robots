@@ -28,9 +28,6 @@ def odometry_callback(data):
         send_command(command)
     elif len(chain) > 0:
         action_start_time = time()
-        command.linear.x = 0.0
-        command.angular.z = 0.0
-        send_command(command)
         current_goal = chain.pop(0)
         current_action = action_chain.pop(0)
     else:
@@ -44,10 +41,9 @@ def initialize():
 
     global action_start_time
 
-    rotate_90_and_move_goal = lambda pose: pose.orientation.z < sqrt(0.5) and pose.position.x < 1.0
-    rotate_180_and_move_goal = lambda pose: pose.orientation.z > 0 and pose.position.y < 1.0
-    rotate_270_and_move_goal = lambda pose: pose.orientation.z < -sqrt(0.5) and pose.position.x > 0.0
-    rotate_360_and_move_goal = lambda pose: pose.orientation.z <= 0 and pose.position.y > 0.0
+    rotate_90_and_move_goal = lambda pose: pose.orientation.z < sqrt(0.5)
+    rotate_180_and_move_goal = lambda pose: pose.orientation.z > 0
+    rotate_360_and_move_goal = lambda pose: pose.orientation.z <= 0 
     null_goal = lambda pose: (time() - action_start_time) < 0.5 
     
     global chain
@@ -64,22 +60,12 @@ def initialize():
         command.angular.z = 0.0 
 
     chain.append(rotate_90_and_move_goal)
-    chain.append(null_goal)
     chain.append(rotate_180_and_move_goal)
-    chain.append(null_goal)
-    chain.append(rotate_270_and_move_goal)
-    chain.append(null_goal)
     chain.append(rotate_360_and_move_goal)
-    chain.append(null_goal)
     
     action_chain.append(rotate_and_move_action)
-    action_chain.append(null_action)
     action_chain.append(rotate_and_move_action)
-    action_chain.append(null_action)
     action_chain.append(rotate_and_move_action)
-    action_chain.append(null_action)
-    action_chain.append(rotate_and_move_action)
-    action_chain.append(null_action)
 
     current_goal = chain.pop(0)
     current_action = action_chain.pop(0)
