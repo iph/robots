@@ -39,6 +39,7 @@ def initialize_commands():
 
     make_maze_service(5,5)
     print_maze_service()
+    print get_wall_service(0,0, UP)
     solve_maze()
 
      
