@@ -59,6 +59,8 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    MakeNewMaze.srv
    GetMazeWall.srv
+   GetNextGoal.srv
+   ConstantCommand.srv
  )
 
 ## Generate actions in the 'action' folder
