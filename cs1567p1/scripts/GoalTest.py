@@ -16,9 +16,18 @@ def send_goal(arguments):
 
 def initialize():
 	rospy.init_node("goal_test", anonymous=True)
-	commands.append(3)
-	commands.append(2)
 	commands.append(1)
+	commands.append(3)
+	commands.append(0)
+	commands.append(1)
+	commands.append(3)
+	commands.append(0)
+	commands.append(1)
+	commands.append(3)
+	commands.append(0)
+	commands.append(1)
+	commands.append(3)
+	commands.append(0)
 
 	s = rospy.Service('get_goal', GetNextGoal, send_goal)
 
