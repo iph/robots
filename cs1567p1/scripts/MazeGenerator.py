@@ -2,7 +2,6 @@
 import rospy
 from cs1567p1.srv import *
 from std_srvs.srv import * 
-import sys
 from random import randint
 from random import shuffle
 

@@ -37,7 +37,11 @@ class Cell(object):
         return self.walls[direction]
 
     def is_fully_unknown(self):
-        return self.walls[0] is UNKNOWN and self.walls[1] is UNKNOWN and self.walls[2] is UNKNOWN and self.walls[3] is UNKNOWN
+        return self.walls[LEFT] is UNKNOWN and self.walls[RIGHT] is UNKNOWN and self.walls[UP] is UNKNOWN and self.walls[DOWN] is UNKNOWN
+
+    def is_fully_known(self):
+        return self.walls[LEFT] is not UNKNOWN and self.walls[RIGHT] is not UNKNOWN and self.walls[UP] is not UNKNOWN and self.walls[DOWN] is not UNKNOWN
+
 
 class KnownMaze(object):
     """A mechanism to keep track of where rosie is in the maze, the current status of the maze
@@ -116,7 +120,7 @@ and the goal in the maze."""
             neighbor_positions.append(neighbor_pos)
         return neighbor_positions
         
-    def print_path_and_maze(self, path):
+    def print_path_and_maze(self, path, turn_path):
         WALL_SYMBOLS = {
             UP: {
                 OPEN:    "    +",
@@ -142,17 +146,16 @@ and the goal in the maze."""
         }
 
         ROSIE_DIRECTION = {
-            UP:    "....",
-            DOWN:  "(vv)",
-            RIGHT: "(>>)",
-            LEFT:  "(<<)"
+            UP:    "^^^^",
+            DOWN:  "vvvv",
+            RIGHT: ">>>>",
+            LEFT:  "<<<<"
         }
-
+        
         s = "+"
         for j in xrange(0, self.max_cols):
             s += WALL_SYMBOLS[UP][self.grid[j][0].get_wall(UP)]
         s += "\n"
-
 
         for i in xrange(0, self.max_rows):
             for _ in range(2):
@@ -160,8 +163,10 @@ and the goal in the maze."""
                 for j in xrange(0, self.max_cols):
                     # Middle rosie
                     cur_pos = (j,i)
-                    if cur_pos in path:
-                        s += ROSIE_DIRECTION[self.current_direction]
+                    if cur_pos in path and path.index(cur_pos) < len(turn_path):
+                            s += ROSIE_DIRECTION[turn_path[path.index(cur_pos)]]
+                    elif cur_pos in path:
+                        s += "XXXX"
                     elif self.grid[j][i].is_fully_unknown():
                         s += "////"
                     else:
