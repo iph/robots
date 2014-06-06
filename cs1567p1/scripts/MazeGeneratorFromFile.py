@@ -14,10 +14,8 @@ LEFT = 0
 RIGHT = 1
 UP = 2
 DOWN = 3
-
 OPEN = 0
 CLOSED = 1
-
 FILE_NAME = "default.txt" 
 
 class Cell(object):
