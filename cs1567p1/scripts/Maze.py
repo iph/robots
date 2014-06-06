@@ -8,7 +8,6 @@ RIGHT = 1
 UP = 2
 DOWN = 3
 
-
 CLOSED = 0
 OPEN = 1
 UNKNOWN = 2
@@ -93,6 +92,18 @@ and the goal in the maze."""
 
     def set_cell_wall(self, col, row, direction, status):
         self.grid[col][row].set_wall(direction, status)
+
+    def move_rosie_up(self):
+        self.current_row -=1
+
+    def move_rosie_down(self):
+        self.current_row += 1
+    
+    def move_rosie_left(self):
+        self.current_col -= 1
+
+    def move_rosie_right(self):
+        self.current_col += 1
 
     def is_rosie_done(self):
         return self.current_row is self.goal_row and self.current_col is self.goal_col

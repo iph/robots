@@ -15,6 +15,7 @@ MOVE_LEFT = 5
 MOVE_UP = 6
 MOVE_DOWN = 7
 SCAN = 8
+GOAL_STEP = 9
 
 make_maze_service = None
 print_maze_service = None
@@ -34,12 +35,16 @@ class MazeSolver(object):
         return self.known_maze.get_current_cell().is_fully_known()
 
     def current_room_is_visited(self):
-        return self.known_maze.get_rosie_position() in self.visited()
+        return self.known_maze.get_rosie_position() in self.visited
 
+    def is_at_goal(self):
+        return self.known_maze.is_rosie_done()
     def add_current_room_to_visited(self):
-        visted.append(self.known_maze.get_rosie_position())
+        self.visited.append(self.known_maze.get_rosie_position())
     def calculate_next_steps(self):
         steps = []
+        if self.is_at_goal():
+            steps.append(GOAL_STEP)
         if not self.current_room_is_known():
             steps.extend(self.generate_room_steps())
         elif not self.current_room_is_visited():
@@ -48,7 +53,7 @@ class MazeSolver(object):
             
             # Get next stack position to go to and generate steps to get there..
             next_position = self.stack.pop()
-            while(next_position in self.visited()):
+            while(next_position in self.visited):
                 next_position = self.stack.pop()
             steps = generate_move_to_position_steps(next_position, self.known_maze)
         else:
@@ -106,8 +111,8 @@ def initialize_commands():
 
     generate_move_to_position_steps((4,4))
 
-def generate_move_to_position_steps(end_pos):
-    path = move_to_position_generation(end_pos)
+def generate_move_to_position_steps(end_pos, known_maze):
+    path = move_to_position_generation(end_pos, known_maze)
     turn_path = []
     i = 0
     # (4,4)->(3,4) (went left, so turn left)  -1,0
