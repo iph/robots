@@ -31,8 +31,7 @@ get_wall_service = None
 constant_command_service = None
 
 def send_cmd(arguments):
-    #    while not commands:
-    while True:
+    while not commands:
         generate_commands()
     return commands.pop(0) 
 
@@ -58,16 +57,16 @@ def generate_commands():
         },
 
         ROTATE_LEFT:{
-            UP: make_request(0, 0, -90),
-            DOWN: make_request(0, 0, 90),
+            UP: make_request(0, 0, 90),
+            DOWN: make_request(0, 0, -90),
             LEFT: make_request(0, 0, 0),
             RIGHT: make_request(0, 0, 180)
             
         },
 
         ROTATE_RIGHT:{
-            UP: make_request(0, 0, 90),
-            DOWN: make_request(0, 0, -90),
+            UP: make_request(0, 0, -90),
+            DOWN: make_request(0, 0, 90),
             LEFT: make_request(0, 0, 180),
             RIGHT: make_request(0, 0, 0)
             
@@ -80,10 +79,10 @@ def generate_commands():
             RIGHT: make_request(0, 0, -90)
         },           
 
-        MOVE_UP: make_request(1, 0, 0),
-        MOVE_DOWN: make_request(1, 0, 0),
-        MOVE_LEFT: make_request(0, 1, 0),
-        MOVE_RIGHT: make_request(0, 1, 0),
+        MOVE_UP: make_request(.5, 0, 0),
+        MOVE_DOWN: make_request(.5, 0, 0),
+        MOVE_LEFT: make_request(0, .5, 0),
+        MOVE_RIGHT: make_request(0, .5, 0),
         GOAL_STEP: make_request(0,0,0),
         SCAN: make_request(0,0,0)
     }
@@ -96,15 +95,23 @@ def generate_commands():
     else:
         commands.append(static_commands[step])
 
-
+    out = {UP:"UP", RIGHT:"RIGHT", LEFT:"LEFT", DOWN:"DOWN"}
     if step is ROTATE_UP:
         # Move rosie.
+        print "ROTATE UP",
+        print "..from ..", out[known_maze.get_rosie_direction()]
         known_maze.set_rosie_direction(UP)
     elif step is ROTATE_LEFT:
+        print "ROTATE LEFT",
+        print "..from ..", out[known_maze.get_rosie_direction()]
         known_maze.set_rosie_direction(LEFT)
     elif step is ROTATE_DOWN:
+        print "ROTATE DOWN",
+        print "..from ..", out[known_maze.get_rosie_direction()]
         known_maze.set_rosie_direction(DOWN)
     elif step is ROTATE_RIGHT:
+        print "ROTATE RIGHT",
+        print "..from ..", out[known_maze.get_rosie_direction()]
         known_maze.set_rosie_direction(RIGHT)
     elif step is SCAN:
         update_known_maze_wall()
@@ -121,7 +128,7 @@ def generate_commands():
         print commands
         print known_maze.print_maze()
         exit()
-
+    print known_maze.print_maze()
 
 
 def initialize():
@@ -141,9 +148,7 @@ def initialize():
     #	commands.append(make_request(0, 0, 90))
     #	commands.append(make_request(0.5, 0, 0))
     #	commands.append(make_request(0, 0, 90))
-    send_cmd(None)
-
-
+    rospy.spin()
 
         
 def update_known_maze_wall():

@@ -7,6 +7,7 @@ from geometry_msgs.msg import *
 from cs1567p1.srv import *
 from math import fabs, sqrt, asin, degrees
 from functools import partial
+from time import clock
 
 def orientation_to_theta(orientation):
     theta = degrees(2 * asin(orientation.z))
@@ -20,12 +21,16 @@ def linear_action(forward, cmd):
         cmd.linear.x *= -1
 
 def rotate_action(counter_clock, cmd):
-    cmd.angular.z = 0.3
+    cmd.angular.z = 0.6
     if not counter_clock:    
         cmd.angular.z *= -1 
 
+def null_action(cmd):
+    cmd.angular.z = 0.0
+    cmd.linear.x = 0.0
+
 def round_to(x, to = 1):
-    return int(to * round(float(x) / to))
+    return to * round(float(x) / to)
 
 class Pursuit(object):
     def __init__(self):
@@ -50,9 +55,22 @@ class RotatePursuit(Pursuit):
     def update(self, pose):
         #print "Target: ", self.target
         #print "Orientation: ", orientation_to_theta(pose.orientation)
-        return fabs(self.target - orientation_to_theta(pose.orientation)) < 1
-        
+        return fabs(self.target - orientation_to_theta(pose.orientation)) < 0.4
 
+class NullPursuit(Pursuit):
+    def __init__(self):
+        super(NullPursuit, self).__init__()
+        self.target = 0.05
+        self.time = 0.0
+        self.action = null_action
+        
+    def update(self, pose):
+        if (self.time == 0.0):
+            self.time = clock()
+            return False
+        delta_time = clock() - self.time
+        return delta_time > self.target
+        
 class Rosie(object):
     def __init__(self):        
         self.pursuits = []
@@ -97,21 +115,30 @@ class Rosie(object):
         if fabs(goal.delta_x - 0.0) < epsilon and fabs(goal.delta_y - 0.0) < epsilon and fabs(goal.delta_theta - 0.0) < epsilon:
             return False
 
-        x_goal = DistancePursuit()
-        x_goal.target = fabs(goal.delta_x)
-        x_goal.step = lambda pose: fabs(pose.position.x - self.pose.position.x)
-        x_goal.action = partial(linear_action, goal.delta_x >= 0)
-        self.pursuits.append(x_goal)
+        if fabs(goal.delta_x - 0.0) > epsilon:
+            x_goal = DistancePursuit()
+            #x_goal.target = fabs(round_to(self.pose.position.x + goal.delta_x, 0.5) - self.pose.position.x)
+            #print "X: ", x_goal.target
+            x_goal.target = fabs(goal.delta_x)
+            x_goal.step = lambda pose: fabs(pose.position.x - self.pose.position.x)
+            x_goal.action = partial(linear_action, goal.delta_x >= 0)
+            self.pursuits.append(x_goal)
+            self.pursuits.append(NullPursuit())
+            return True
         
-        y_goal = DistancePursuit()
-        y_goal.target = fabs(goal.delta_y)
-        y_goal.step = lambda pose: fabs(pose.position.y - self.pose.position.y)
-        y_goal.action = partial(linear_action, goal.delta_y >= 0)
-        self.pursuits.append(y_goal)
-        
+        if fabs(goal.delta_y - 0.0) > epsilon:
+            y_goal = DistancePursuit()
+            #y_goal.target = fabs(round_to(self.pose.position.y + goal.delta_y, 0.5) - self.pose.position.y)
+            #print "Y: ", y_goal.target
+            y_goal.target = fabs(goal.delta_y)
+            y_goal.step = lambda pose: fabs(pose.position.y - self.pose.position.y)
+            y_goal.action = partial(linear_action, goal.delta_y >= 0)
+            self.pursuits.append(y_goal)
+            self.pursuits.append(NullPursuit())
+            return True
 
         if fabs(goal.delta_theta - 0.0) < epsilon:
-            return True
+            return False
 
         theta_goal = RotatePursuit()
         delta_theta = fabs(goal.delta_theta) % 360
@@ -126,11 +153,13 @@ class Rosie(object):
             
         elif theta_goal.target < 0:
             # run around 360 opposite way
-            theta_goal.target = 360 - theta_goal.target
+            theta_goal.target = 360 + theta_goal.target
 
         theta_goal.target = round_to(theta_goal.target, 90)
+        print "Target: ", theta_goal.target
         theta_goal.action = partial(rotate_action, goal.delta_theta >= 0)
         self.pursuits.append(theta_goal)
+        self.pursuits.append(NullPursuit())
 
         return True
 
@@ -151,6 +180,7 @@ class Rosie(object):
             if not pursuit.update(odom.pose.pose):
                 pursuit.action(command)
             else:
+                print odom.pose.pose
                 self.pursuits.pop(0)
             
             #print "Target: {0}".format(pursuit.target)

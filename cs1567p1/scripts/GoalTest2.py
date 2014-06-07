@@ -23,12 +23,12 @@ def make_request(x, y, theta):
 def initialize():
 	rospy.init_node("goal_test", anonymous=True)
 	global commands
-	commands.append(make_request(0.5, 0, 0))
+	#commands.append(make_request(0.5, 0, 0))
 	commands.append(make_request(0, 0, 90))
-	commands.append(make_request(0, 0.5, 0))
-	commands.append(make_request(0, 0, 90))
-	commands.append(make_request(0.5, 0, 0))
-	commands.append(make_request(0, 0, 90))
+	#commands.append(make_request(0, 0.5, 0))
+	#commands.append(make_request(0.5, 0, 0))
+	#commands.append(make_request(0.5, 0, 0))
+	#commands.append(make_request(0, 0, -90))
 
 	s = rospy.Service('rosie_cmd', GetCommand, send_cmd)
 
