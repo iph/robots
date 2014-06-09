@@ -16,12 +16,12 @@ def orientation_to_theta(orientation):
     return theta
 
 def linear_action(forward, cmd):
-    cmd.linear.x = 0.3
+    cmd.linear.x = 0.2
     if not forward:
         cmd.linear.x *= -1
 
 def rotate_action(counter_clock, cmd):
-    cmd.angular.z = 0.6
+    cmd.angular.z = 0.5
     if not counter_clock:    
         cmd.angular.z *= -1 
 
@@ -53,9 +53,12 @@ class DistancePursuit(Pursuit):
 
 class RotatePursuit(Pursuit):
     def update(self, pose):
-        #print "Target: ", self.target
-        #print "Orientation: ", orientation_to_theta(pose.orientation)
-        return fabs(self.target - orientation_to_theta(pose.orientation)) < 0.4
+        diff = fabs(self.target - orientation_to_theta(pose.orientation))
+        # if target is 0 or 360, return check against 360 - eps/2, 0 + eps/2
+        if fabs(self.target - 0.0) < 0.01 or fabs(self.target - 360.0) < 0.01:
+            return diff < 0.25 or fabs(diff - 360) < 0.25
+        # otherwise just check against (target - eps, target + eps)
+        return diff < .4
 
 class NullPursuit(Pursuit):
     def __init__(self):
@@ -75,6 +78,8 @@ class Rosie(object):
     def __init__(self):        
         self.pursuits = []
         self.pose = None
+        self.turns = 0
+        self.error = 1
 
         rospy.init_node('Rosie', anonymous=True)
         rospy.wait_for_service('constant_command')
@@ -120,7 +125,8 @@ class Rosie(object):
             #x_goal.target = fabs(round_to(self.pose.position.x + goal.delta_x, 0.5) - self.pose.position.x)
             #print "X: ", x_goal.target
             x_goal.target = fabs(goal.delta_x)
-            x_goal.step = lambda pose: fabs(pose.position.x - self.pose.position.x)
+            x_goal.step = lambda pose: sqrt( fabs(self.pose.position.x - pose.position.x)**2 + fabs(self.pose.position.y - pose.position.y)**2)
+            #x_goal.step = lambda pose: fabs(pose.position.x - self.pose.position.x)
             x_goal.action = partial(linear_action, goal.delta_x >= 0)
             self.pursuits.append(x_goal)
             self.pursuits.append(NullPursuit())
@@ -131,7 +137,8 @@ class Rosie(object):
             #y_goal.target = fabs(round_to(self.pose.position.y + goal.delta_y, 0.5) - self.pose.position.y)
             #print "Y: ", y_goal.target
             y_goal.target = fabs(goal.delta_y)
-            y_goal.step = lambda pose: fabs(pose.position.y - self.pose.position.y)
+            #y_goal.step = lambda pose: fabs(pose.position.y - self.pose.position.y)
+            y_goal.step = lambda pose: sqrt( fabs(self.pose.position.x - pose.position.x)**2 + fabs(self.pose.position.y - pose.position.y)**2)
             y_goal.action = partial(linear_action, goal.delta_y >= 0)
             self.pursuits.append(y_goal)
             self.pursuits.append(NullPursuit())
@@ -155,8 +162,18 @@ class Rosie(object):
             # run around 360 opposite way
             theta_goal.target = 360 + theta_goal.target
 
-        theta_goal.target = round_to(theta_goal.target, 90)
+        total_error = self.turns * self.error
+
+        theta_goal.target = round_to(theta_goal.target - total_error, 90)
+        
+        theta_goal.target = (theta_goal.target + total_error) % 360
         print "Target: ", theta_goal.target
+        print "Number turns: ", self.turns
+        print "Total error: ", self.turns * self.error
+        self.turns += 1
+        if (self.turns > 30):
+            self.error = 0.9
+
         theta_goal.action = partial(rotate_action, goal.delta_theta >= 0)
         self.pursuits.append(theta_goal)
         self.pursuits.append(NullPursuit())
