@@ -1,0 +1,27 @@
+1. Determine R,G,B,A values of post-its
+
+2. Gather collection of points for each post-it color ( O(n) on # of points )
+    - for each point in cloud
+        - if point.color matches color x 
+            - add point to bucket x
+    return buckets 
+
+3. optionally process non-unique colors ( O(n^2) on # of colored points )
+    - while bucket not empty
+        - remove point from bucket and append to new list
+        - 'grow' point
+        - if point list <= NOISE discard 
+
+    - 'grow' point:
+        - gather adjacent points from bucket 
+        - if points found
+        -   remove them from bucket
+        -   recurse
+        -   add points to point list
+
+3. Compute center of points in each color bucket ( O(n) on # of points )
+    3.a average x/y/z of points in bucket
+
+4. Find closet direction blob, compute vector
+
+5. Transform centers/direction vectors to robot-world
