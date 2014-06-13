@@ -14,7 +14,7 @@ def probe_color(image, row, col):
     index = get_index(image, row, col)
     image_matrix = list(image.data)
     return Color(image_matrix[index], image_matrix[index + 1],\
-                 image_matrix[index + 3])
+                 image_matrix[index + 2])
 
 def midpoint_2d(points):
     """Computes center of finite set of points in 2d space
