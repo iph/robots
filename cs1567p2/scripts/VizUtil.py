@@ -41,7 +41,7 @@ def color_match(color, target, threshold=20):
 
 # NEEDS TESTED
 def group_colors(image, colors):
-    """Buckets all of the points in the image_matrix that match one of the given 
+    """Buckets all of the points in the image that match one of the given 
        colors. Returns a dictionary of colors to sets of points"""
 
     color_dict = {}
