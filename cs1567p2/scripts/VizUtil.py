@@ -14,8 +14,8 @@ def probe_color(image, row, col):
 
     index = get_index(image, row, col)
     image_matrix = list(image.data)
-    return Color(ord(image_matrix[index]), ord(image_matrix[index + 1]),\
-                 ord(image_matrix[index + 2]))
+    return Color(ord(image_matrix[index + 2]), ord(image_matrix[index + 1]),\
+                 ord(image_matrix[index]))
 
 def midpoint_2d(points):
     """Computes center of finite set of points in 2d space
@@ -42,7 +42,8 @@ def color_match(color, target, threshold=20):
 
 def group_colors(image, colors):
     """Buckets all of the points in the image that match one of the given 
-       colors. Returns a dictionary of colors to sets of points"""
+       colors. Returns a dictionary of colors to sets of points.
+       Points are in (col, row) (x, y)"""
 
     color_dict = {}
     
@@ -57,14 +58,14 @@ def group_colors(image, colors):
         for col in xrange(image.width):
             # each row is message.step long, each element is 3 bytes
             index = get_index(image, row, col)
-            # grab color of current pixel
+            # grab color of current pixel (conv to r,g,b)
             pixel_color = Color(ord(image_matrix[index + 2]),\
                                 ord(image_matrix[index + 1]),\
                                 ord(image_matrix[index]))
             for color in colors:
                 # if color matches, add the row and col
                 if color_match(color, pixel_color):
-                    color_dict[color].add(Point(row, col))
+                    color_dict[color].add(Point(col, row))
                     break
 
     return color_dict
