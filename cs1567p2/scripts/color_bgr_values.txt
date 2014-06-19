@@ -1,0 +1,14 @@
+BGR VALUES
+
+red construction paper: 180, 165, 235
+blue construct paper: 240, 205, 175
+white construct paper: 255, 255, 255
+orange construct paper: 190, 240, 250
+yellow construct paper: 200, 255, 255
+green construct paper: 240, 250, 240
+black construct paper: 150, 140, 135
+brown constuct paper: 180, 204, 235
+
+neon green: 200, 250, 250
+
+
