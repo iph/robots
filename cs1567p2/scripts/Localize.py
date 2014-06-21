@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-import pdb
+import pickle
 import sensor_msgs.point_cloud2 as pc2
 from sensor_msgs.msg import *
 from cs1567p2.msg import *
@@ -228,16 +228,19 @@ def initialize():
     global kinect2pub
     global locpub
     rospy.init_node("localize")
-    locpub = rospy.Publisher("/rosie/location",LocationList) #publish your locations
+    #locpub = rospy.Publisher("/rosie/location",LocationList) #publish your locations
     kinect1pub = rospy.Publisher("/rosie/mask",Image) #test your mask
-    #kinect2pub = rospy.Publisher("/rosie/mask",Image)
+    kinect2pub = rospy.Publisher("/rosie/mask",Image)
     #rospy.Subscriber("/kinect1/rgb/image_color", Image, process_image)
     #rospy.Subscriber("/kinect1/rgb/image_color", Image, top_image_callback)
     #rospy.Subscriber("/kinect1/depth_registered/points", PointCloud2, top_cloud_callback)
     #rospy.Subscriber("/kinect2/rgb/image_color", Image, mid_image_callback)
     #rospy.Subscriber("/kinect2/depth_registered/points", PointCloud2, mid_cloud_callback)
     localizer1 = Localizer()
-    rospy.Subscriber("/kinect1/rgb/image_color", Image, localizer1.process_image)
+    #rospy.Subscriber("/kinect1/rgb/image_color", Image, localizer1.process_image)
+    input = open("data.img", "rb")
+    data = pickle.load(input)
+    localizer1.process_image(data)
     #rospy.Subscriber("/kinect1/depth_registered/points", PointCloud2, localizer1.process_cloud)
     
     rospy.spin()
