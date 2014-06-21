@@ -1,5 +1,6 @@
 from collections import namedtuple
 import rospy
+from copy import deepcopy
  
 
 Point = namedtuple('Point', ['x', 'y'])
@@ -13,10 +14,11 @@ def probe_color(image, row, col):
     """Returns the color of the picture at row, col in the image."""
 
     index = get_index(image, row, col)
-    image_matrix = list(image.data)
+    image_matrix = image.data
     return Color(ord(image_matrix[index + 2]), ord(image_matrix[index + 1]),\
                  ord(image_matrix[index]))
 
+# Todo: Might not need this anymore.
 def midpoint_2d(points):
     """Computes center of finite set of points in 2d space
        Returns a tuple (center_x, center_y)"""
@@ -34,7 +36,7 @@ def midpoint_2d(points):
 
     return (x_sum / n, y_sum / n)
 
-def color_match(color, target, threshold=20):
+def color_match(color, target, threshold=28):
     """Returns true if color is near target, within a certain threshold"""
     return abs(color.r - target.r) < threshold\
            and abs(color.b - target.b) < threshold\
@@ -53,7 +55,8 @@ def group_colors(image, colors):
 
     # convert image data to list
     image_matrix = image.data
-
+    #image_data = bytes(image.data)
+    #image_matrix = image_data
     for row in xrange(image.height):
         for col in xrange(image.width):
             # each row is message.step long, each element is 3 bytes
@@ -67,18 +70,18 @@ def group_colors(image, colors):
                 if color_match(color, pixel_color):
                     color_dict[color].add(Point(col, row))
                     break
-
+    print "Done grouping.."
     return color_dict
 
 def cluster_points(points):
     """Takes a set of points and clusters the adjacent points into separate 
        lists. Returns a list of sets of points, each set defining a cluster"""
     clusters = []
+    points = deepcopy(points)
     while len(points) > 0:
         # grab a random point and grow it
         cluster = grow_cluster(points)
         clusters.append(cluster)
-
     return clusters
 
 def grow_cluster(points):

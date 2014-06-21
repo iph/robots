@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import rospy
+import pdb
 import sensor_msgs.point_cloud2 as pc2
 from sensor_msgs.msg import *
 from cs1567p2.msg import *
 from VizUtil import *
-
+from Blob import *
 color_mask_list = [[180, 165, 235], [240, 205, 175], [200, 250, 250]]
 threshold = 16
 locpub = None
@@ -14,6 +15,8 @@ top_mask = Image()
 mid_mask = Image()
 robot_centers = []
 
+CLUSTER_POINT_THRESHOLD = 90
+
 # TODO: use localizer with ros callbacks
 # idea: each localizer associated with different transform
 # and image publisher. define a new class that takes centers
@@ -21,12 +24,21 @@ robot_centers = []
 # of each object. 
 class Localizer(object):
     # TODO: put color filters here
-    obj_colors = [Color(235, 165, 180)]
+    obj_colors = [
+#        Color(214, 185, 146), # Shit stain brown
+        Color(244, 243, 240), # White for cross
+        Color(209, 243, 210), # Neon construction green.
+        Color(160, 188, 232), # Blue
+#        Color(240, 205, 175), 
+#        Color(235, 165, 180), 
+#        Color(250, 232, 195)
+]
     dir_color = None
 
     def __init__(self):
         super(Localizer, self).__init__()
         self.obj_blobs = {}
+        self.blobs = []
         self.obj_centers = {}
         #self.dir_blobs = []
 
@@ -38,14 +50,24 @@ class Localizer(object):
 
         self.obj_blobs = groups
 
-        for color_key in groups:
-            print "Color: " , color_key, " Center: ", midpoint_2d(groups[color_key])
+        #for color_key in groups:
+        #    print "Color: " , color_key, " Center: ", midpoint_2d(groups[color_key])
 
         all_points = set()
         for color_key in groups:
             all_points = all_points | groups[color_key]
+        clusters = cluster_points(all_points)
+        print "Done clustering.."
+        for cluster in clusters:
+            if len(cluster) > CLUSTER_POINT_THRESHOLD:
+                self.blobs.append(Blob(cluster, image))
+        
+        filtered_points = set()
+        for blob in self.blobs:
+            print "Color: ", blob.color, " Center: ", blob.center, " points: ", len(blob.points)
+            filtered_points = filtered_points | blob.points
 
-        send_mask(image, all_points)
+        send_mask(image, filtered_points)
         print "Finished processing image"
 
         #self.obj_centers = centers
@@ -96,34 +118,15 @@ def send_mask(image, points):
                 mask.data[index + 1] = chr(0)
                 mask.data[index + 2] = chr(0)
 
+            else:
+                index = get_index(image, row, col)
+                mask.data[index] = chr(201)
+                mask.data[index + 1] = chr(99)
+                mask.data[index + 2] = chr(255)
     mask.data = "".join(mask.data)
     global kinect1pub
     kinect1pub.publish(mask)
 
-
-def process_image(message):
-
-    # TODO: put colors of post-its here
-    colors = [
-        Color(0,0,0)
-    ]
-
-    print probe_color(message, message.height / 2, message.width / 2)
-
-    # group the colors into points
-    groups = group_colors(message, colors)
-    # get center of each color group
-    centers = []
-    for color in colors:
-        centers.append(midpoint_2d(groups[color]))
-
-    # store centers
-    global robot_centers
-    robot_centers = centers
-
-    #print probe_color(message, 0, 0)
-
-    # TODO: grab directional blobs & cluster
 
 
 def top_image_callback(message):
