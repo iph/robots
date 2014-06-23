@@ -7,6 +7,12 @@ Point = namedtuple('Point', ['x', 'y'])
 Color = namedtuple('Color', ['r', 'g', 'b'])
 Pixel = namedtuple('Pixel', ['point', 'color'])
 
+obj_threshold = {
+    Color(160, 188, 232): [Color(145, 188, 220), Color(170, 205, 245)],
+    Color(235, 158, 180): [Color(220, 120, 150), Color(245, 185, 210)],
+    Color(240, 221, 191): [Color(220, 200, 170), Color(250, 230, 210)],
+    Color(161, 137, 204): [Color(140, 110, 180), Color(170, 170, 220)]
+}
 def get_index(image, row, col):
     return (row * image.step) + (3 * col)
 
@@ -43,11 +49,12 @@ def midpoint_2d(points):
 
     return (x_sum / n, y_sum / n)
 
-def color_match(color, target, threshold=28):
+def color_match(target, color, threshold=30):
     """Returns true if color is near target, within a certain threshold"""
-    return abs(color.r - target.r) < threshold\
-           and abs(color.b - target.b) < threshold\
-           and abs(color.g - target.g) < threshold
+    global obj_threshold
+    return (obj_threshold[target][0].r < color.r and color.r < obj_threshold[target][1].r 
+    and obj_threshold[target][0].g < color.g and color.g < obj_threshold[target][1].g 
+    and obj_threshold[target][0].b < color.b and color.b < obj_threshold[target][1].b )
 
 def group_colors(image, colors):
     """Buckets all of the points in the image that match one of the given 

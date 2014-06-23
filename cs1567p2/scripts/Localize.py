@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 import rospy
+import math
 import pickle
 import sensor_msgs.point_cloud2 as pc2
 from sensor_msgs.msg import *
 from cs1567p2.msg import *
 from VizUtil import *
 from Blob import *
+from Robot import *
 color_mask_list = [[180, 165, 235], [240, 205, 175], [200, 250, 250]]
 threshold = 16
 locpub = None
@@ -15,8 +17,9 @@ top_mask = Image()
 mid_mask = Image()
 robot_centers = []
 
-CLUSTER_POINT_THRESHOLD = 90
-
+DIRECTION_BLOB_COLOR = Color(235, 158, 180)
+CLUSTER_POINT_THRESHOLD = 60
+CLUSTER_POINT_CEILING = 600
 # TODO: use localizer with ros callbacks
 # idea: each localizer associated with different transform
 # and image publisher. define a new class that takes centers
@@ -25,15 +28,17 @@ CLUSTER_POINT_THRESHOLD = 90
 class Localizer(object):
     # TODO: put color filters here
     obj_colors = [
-        Color(214, 185, 146), # Shit stain brown
-        Color(244, 243, 240), # White for cross
-        Color(209, 243, 210), # Neon construction green.
+#        Color(214, 185, 146), # Shit stain brown
+#        Color(244, 243, 240), # White for cross
+ #       Color(209, 243, 210), # Neon construction green.
         Color(160, 188, 232), # Blue
-        Color(240, 205, 175), 
-        Color(235, 165, 180), 
-        Color(250, 232, 195)
+        Color(235, 158, 180), # Red
+        Color(240, 221, 191), # Crappy oj/ yellow?
+        Color(161, 137, 204) # Purple
+#        Color(250, 232, 195)
 ]
-    dir_color = None
+
+    dir_color = Color(235, 158, 180)
 
     def __init__(self):
         super(Localizer, self).__init__()
@@ -55,17 +60,19 @@ class Localizer(object):
         #    print "Color: " , color_key, " Center: ", midpoint_2d(groups[color_key])
 
         all_points = set()
+        clusters = []
         for color_key in groups:
             all_points = all_points | groups[color_key]
-        clusters = cluster_points(all_points)
+            clusters.extend(cluster_points(groups[color_key]))
         print "Done clustering.."
 
         for cluster in clusters:
-            if len(cluster) > CLUSTER_POINT_THRESHOLD:
+            if len(cluster) > CLUSTER_POINT_THRESHOLD :
                 blob = Blob(cluster, image)
                 blob.color = label_color(blob.color, obj_colors)
                 self.blobs.append(blob)
                 self.unprocessed_blobs.append(blob)
+                print "Blob: ", len(blob.points), " color: ", blob.color
 
         filtered_points = set()
         for blob in self.blobs:
@@ -93,13 +100,51 @@ class Localizer(object):
                 while point != None:
                     points.append(Point(point[0], point[1]))
                     point = next(point_iter)
+                blob.set_center(midpoint_2d(points))
             except StopIteration:
+                blob.set_center(midpoint_2d(points))
                 pass
-            blob.set_center(midpoint_2d(points))
 
-        self.unprocessed_blobs = []
-        self.obj_centers = obj_centers  
-        print "Finished processing cloud"    
+
+        self.obj_centers = obj_centers
+        # Some weird nones in the point cloud. REMOVE THEM!
+        # todo: This could be a bigger problem. Check dis out when you can
+        filtered_blobs = []
+        for blob in self.blobs:
+            if blob.center is not None:
+                filtered_blobs.append(blob)
+                # Check if it is red.
+                print "Blob: ", blob.center, " , color: ", blob.color, " points:", len(blob.points)
+
+        self.blobs = filtered_blobs
+        dir_blobs, potential_identifier_blobs = classify_blobs(self.blobs)
+        robots = find_robots(dir_blobs, potential_identifier_blobs)
+        print "Finished processing all robots"    
+        for robot in robots:
+            print "Robot %d: (%.2f, %.2f) with dir: %d" % (robot.get_id(), robot.get_loc()[0], robot.get_loc()[1], robot.get_direction())
+
+def classify_blobs(blobs):
+    dir_blobs = []
+    potential_identifier_blobs = []
+    for blob in blobs:
+        if blob.color == DIRECTION_BLOB_COLOR:
+            dir_blobs.append(blob)
+        else:
+            potential_identifier_blobs.append(blob)
+    return dir_blobs, potential_identifier_blobs
+
+def find_robots(red_blobs, others):
+    robots = []
+    for red_blob in red_blobs:
+        euclid_dist = lambda blob: math.sqrt((red_blob.center[0] - blob.center[0])**2 + (red_blob.center[1] - blob.center[1])**2)
+        closest_blob = min(others, key = euclid_dist)
+
+        if abs(closest_blob.center[0] - red_blob.center[0]) > .2 or abs(closest_blob.center[1] - red_blob.center[1]) > .2:
+            continue
+        else:
+            robots.append(Robot(red_blob, closest_blob))
+    return robots
+    
 
 def send_mask(image, points):
     mask = Image()  
@@ -125,100 +170,6 @@ def send_mask(image, points):
 
 
 
-def top_image_callback(message):
-    global color_mask_list
-    global top_mask
-    global threshold
-    global kinect1pub
-    #make a new image if you want to view your mask
-    top_mask = Image()
-    top_mask.height = message.height
-    top_mask.width = message.width
-    top_mask.encoding = message.encoding
-    top_mask.is_bigendian = message.is_bigendian
-    top_mask.step = message.step
-    if message.encoding == "bgr8": #this is image_color encoding
-        byte_array = list(message.data) #convert unit8[] from string to chars
-        mid = (message.height/2 * message.step) + ((message.width/2) * 3)
-        print "Mid color: ", ord(byte_array[mid]), " ", ord(byte_array[mid + 1]), " ", ord(byte_array[mid + 2])
-        for index in xrange(message.height*message.width): #iterate through
-            match = False
-            for k in xrange(len(color_mask_list)): 
-                #iterate through color list, if the bytes match, save the color
-                #in the mask
-                if abs(color_mask_list[k][0] - ord(byte_array[3*index])) < threshold\
-                        and abs(color_mask_list[k][1] - ord(byte_array[3*index+1])) < threshold\
-                        and abs(color_mask_list[k][2] - ord(byte_array[3*index+2])) < threshold:
-                    match = True
-                    break
-
-            if not match:
-                byte_array[3 * index] = chr(0)
-                byte_array[3 * index + 1] = chr(0)
-                byte_array[3 * index + 2] = chr(0)
-
-    top_mask.data = "".join(byte_array) #make char[] back into uint8[] string
-    kinect1pub.publish(top_mask) #publish the mask for viewing
-    print "done1"
-        
-def mid_image_callback(message):
-    global color_mask_list
-    global mid_mask
-    global threshold
-    global kinect2pub
-    mid_mask = Image()
-    mid_mask.height = message.height
-    mid_mask.width = message.width
-    mid_mask.encoding = message.encoding
-    mid_mask.is_bigendian = message.is_bigendian
-    mid_mask.step = message.step
-    if message.encoding == "bgr8":
-        byte_array = list(message.data)
-        for index in xrange(message.height*message.width):
-            byte_array[3*index] = chr(0)
-            byte_array[3*index+1] = chr(0)
-            byte_array[3*index+2] = chr(0)
-            for k in xrange(len(color_mask_list)):
-                if abs(color_mask_list[k][0] - ord(byte_array[3*index])) < threshold\
-                        and abs(color_mask_list[k][1] - ord(byte_array[3*index+1])) < threshold\
-                        and abs(color_mask_list[k][2] - ord(byte_array[3*index+2])) < threshold:
-                    byte_array[3*index+0] = chr(color_mask_list[k][0])
-                    byte_array[3*index+1] = chr(color_mask_list[k][1])
-                    byte_array[3*index+2] = chr(color_mask_list[k][2])
-    mid_mask.data = "".join(byte_array)
-    kinect2pub.publish(mid_mask)
-    print "done2"
-
-
-def top_cloud_callback(message):
-    try:
-        global robot_centers
-        centers = robot_centers
-
-        if len(centers) == 0:
-            return
-        #make a generator, skipping points that have no depth, on points in 
-        # list of uvs (index into image [col,row]) or if empty list, get all pt
-        data_out = pc2.read_points(message, field_names=None, skip_nans=True, uvs=centers) 
-        i=0
-        iteration1 = next(data_out) #format x,y,z,rgba
-        while iteration1 != None:            
-            iteration1 = next(data_out)            
-            i=i+1
-    except StopIteration: 
-        print "1 complete"
-
-def mid_cloud_callback(message):
-    try:
-        data_out = pc2.read_points(message, field_names=None, skip_nans=True, uvs=[])
-        i=0
-        iteration1 = next(data_out) #format x,y,z,rgba
-        while iteration1 != None:
-            iteration1 = next(data_out)
-            i=i+1
-    except StopIteration: 
-        print "2 complete"
-
 def initialize():
     global kinect1pub
     global kinect2pub
@@ -233,8 +184,14 @@ def initialize():
     #rospy.Subscriber("/kinect2/rgb/image_color", Image, mid_image_callback)
     #rospy.Subscriber("/kinect2/depth_registered/points", PointCloud2, mid_cloud_callback)
     localizer1 = Localizer()
-    rospy.Subscriber("/kinect2/rgb/image_color", Image, localizer1.process_image)
-    rospy.Subscriber("/kinect2/depth_registered/points", PointCloud2, localizer1.process_cloud)
+    #    rospy.Subscriber("/kinect2/rgb/image_color", Image, localizer1.process_image)
+    #    rospy.Subscriber("/kinect2/depth_registered/points", PointCloud2, localizer1.process_cloud)
+    input = open("data2.img", "rb")
+    input2 = open("pc2.img", "rb")
+    data = pickle.load(input)
+    data2 = pickle.load(input2)
+    localizer1.process_image(data)
+    localizer1.process_cloud(data2)
     rospy.spin()
 
 if __name__ == "__main__":
