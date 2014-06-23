@@ -40,8 +40,9 @@ class Localizer(object):
 
     dir_color = Color(235, 158, 180)
 
-    def __init__(self):
+    def __init__(self, local):
         super(Localizer, self).__init__()
+        self.local = local
         self.obj_blobs = {}
         self.blobs = []
         self.unprocessed_blobs = []
@@ -120,8 +121,12 @@ class Localizer(object):
         dir_blobs, potential_identifier_blobs = classify_blobs(self.blobs)
         robots = find_robots(dir_blobs, potential_identifier_blobs)
         print "Finished processing all robots"    
+        transformation = lambda point, local: (point[0] + local[0], point[1] + local[1])
         for robot in robots:
-            print "Robot %d: (%.2f, %.2f) with dir: %d" % (robot.get_id(), robot.get_loc()[0], robot.get_loc()[1], robot.get_direction())
+            print "Robot %d: (%.2f, %.2f) with dir: %d" % (robot.get_id(), 
+                                                transformation(robot.get_loc(), self.local)[0],
+                                                transformation(robot.get_loc(), self.local)[1], 
+                                                robot.get_direction())
 
 def classify_blobs(blobs):
     dir_blobs = []
@@ -183,7 +188,8 @@ def initialize():
     #rospy.Subscriber("/kinect1/depth_registered/points", PointCloud2, top_cloud_callback)
     #rospy.Subscriber("/kinect2/rgb/image_color", Image, mid_image_callback)
     #rospy.Subscriber("/kinect2/depth_registered/points", PointCloud2, mid_cloud_callback)
-    localizer1 = Localizer()
+
+    localizer1 = Localizer((0,0))
     #    rospy.Subscriber("/kinect2/rgb/image_color", Image, localizer1.process_image)
     #    rospy.Subscriber("/kinect2/depth_registered/points", PointCloud2, localizer1.process_cloud)
     input = open("data2.img", "rb")
