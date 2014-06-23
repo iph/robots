@@ -63,11 +63,9 @@ class Localizer(object):
         for cluster in clusters:
             if len(cluster) > CLUSTER_POINT_THRESHOLD:
                 blob = Blob(cluster, image)
-                print "color before: ", blob.color
                 blob.color = label_color(blob.color, obj_colors)
                 self.blobs.append(blob)
                 self.unprocessed_blobs.append(blob)
-                print "color: ", blob.color
 
         filtered_points = set()
         for blob in self.blobs:
@@ -235,13 +233,8 @@ def initialize():
     #rospy.Subscriber("/kinect2/rgb/image_color", Image, mid_image_callback)
     #rospy.Subscriber("/kinect2/depth_registered/points", PointCloud2, mid_cloud_callback)
     localizer1 = Localizer()
-    #rospy.Subscriber("/kinect1/rgb/image_color", Image, localizer1.process_image)
-    input = open("data.img", "rb")
-    data = pickle.load(input)
-    localizer1.process_image(data)
-    #rospy.Subscriber("/kinect1/depth_registered/points", PointCloud2, localizer1.process_cloud)
-    blue_close = Color(143, 183, 220)
-    print label_color(blue_close, Localizer.obj_colors)
+    rospy.Subscriber("/kinect2/rgb/image_color", Image, localizer1.process_image)
+    rospy.Subscriber("/kinect2/depth_registered/points", PointCloud2, localizer1.process_cloud)
     rospy.spin()
 
 if __name__ == "__main__":
