@@ -6,6 +6,7 @@ from sensor_msgs.msg import *
 from cs1567p2.msg import *
 from VizUtil import *
 from Blob import *
+import pickle
 color_mask_list = [[180, 165, 235], [240, 205, 175], [200, 250, 250]]
 threshold = 16
 locpub = None
@@ -14,7 +15,7 @@ kinect2pub = None
 top_mask = Image()
 mid_mask = Image()
 robot_centers = []
-
+FOO = False
 CLUSTER_POINT_THRESHOLD = 90
 
 # TODO: use localizer with ros callbacks
@@ -102,6 +103,17 @@ class Localizer(object):
         self.unprocessed_blobs = []
         self.obj_centers = obj_centers  
         print "Finished processing cloud"    
+
+def IMAPICKLE(image):
+    global FOO
+    if FOO:
+        return
+
+    output = open('data.img', 'wb')
+    pickle.dump(image, output)
+    output.close()
+    print "Done"
+    FOO = True
 
 def send_mask(image, points):
     mask = Image()  
@@ -236,9 +248,7 @@ def initialize():
     #rospy.Subscriber("/kinect2/depth_registered/points", PointCloud2, mid_cloud_callback)
     localizer1 = Localizer()
     #rospy.Subscriber("/kinect1/rgb/image_color", Image, localizer1.process_image)
-    input = open("data.img", "rb")
-    data = pickle.load(input)
-    localizer1.process_image(data)
+    rospy.Subscriber("/kinect1/rgb/image_color", Image, IMAPICKLE)
     #rospy.Subscriber("/kinect1/depth_registered/points", PointCloud2, localizer1.process_cloud)
     blue_close = Color(143, 183, 220)
     print label_color(blue_close, Localizer.obj_colors)
