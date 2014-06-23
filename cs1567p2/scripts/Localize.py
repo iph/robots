@@ -27,7 +27,7 @@ CLUSTER_POINT_CEILING = 1000
 # of each object. 
 
 class Coordinator(object):
-    transforms = [(0.0, 0.0), (0.0, 0.0), (.15485772525065952, 0.8954903004095727)]
+    transforms = [(0.20533245509128076, -0.993252002101), (.15485772525065952, 0.8954903004095727)]
     
     def __init__(self):
         self.all_robots = []
@@ -121,7 +121,7 @@ class Localizer(object):
                     blob.color = color_key
                     self.blobs.append(blob)
                     self.unprocessed_blobs.append(blob)
-                    print "Blob: ", len(blob.points), " color: ", Localizer.color_names[blob.color]
+                    #print "Blob: ", len(blob.points), " color: ", Localizer.color_names[blob.color]
         print "Done clustering.."
 
 
@@ -129,7 +129,7 @@ class Localizer(object):
         filtered_points = set()
         for blob in self.blobs:
             filtered_points = filtered_points | blob.points
-        send_mask(imgur, filtered_points)
+        #send_mask(imgur, filtered_points)
         print "Finished processing image"
         #self.obj_centers = centers
 
@@ -153,7 +153,7 @@ class Localizer(object):
                     points.append(Point(point[0], point[1]))
                     point = next(point_iter)
             except StopIteration:
-                print len(points), "  ", len(blob.points)
+                #print len(points), "  ", len(blob.points)
                 blob.set_center(midpoint_2d(points))
                 pass
 
@@ -164,7 +164,7 @@ class Localizer(object):
         for blob in self.blobs:
             if blob.center is not None:
                 filtered_blobs.append(blob)
-                print "Blob: ", blob.center, " , color: ", Localizer.color_names[blob.color], " points:", len(blob.points)
+                #print "Blob: ", blob.center, " , color: ", Localizer.color_names[blob.color], " points:", len(blob.points)
 
         self.blobs = filtered_blobs
         dir_blobs, potential_identifier_blobs = classify_blobs(self.blobs)
@@ -176,7 +176,7 @@ class Localizer(object):
             filtered_points = filtered_points | robot.dir_blob.points
             filtered_points = filtered_points | robot.identifier_blob.points
         self.master.update(robots, self.ident)
-        #send_mask(imgur, filtered_points)
+        send_mask(imgur, filtered_points)
 
 def classify_blobs(blobs):
     dir_blobs = []
