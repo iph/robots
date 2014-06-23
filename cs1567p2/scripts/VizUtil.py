@@ -8,10 +8,13 @@ Color = namedtuple('Color', ['r', 'g', 'b'])
 Pixel = namedtuple('Pixel', ['point', 'color'])
 
 obj_threshold = {
-    Color(160, 188, 232): [Color(145, 188, 220), Color(170, 205, 245)],
-    Color(235, 158, 180): [Color(220, 120, 150), Color(245, 185, 210)],
+    Color(160, 188, 232): [Color(135, 181, 210), Color(170, 205, 245)],
+    Color(235, 158, 180): [Color(220, 110, 140), Color(250, 210, 220)],
     Color(240, 221, 191): [Color(220, 200, 170), Color(250, 230, 210)],
-    Color(161, 137, 204): [Color(140, 110, 180), Color(170, 170, 220)]
+    Color(161, 137, 204): [Color(130, 100, 170), Color(180, 180, 230)],
+    Color(146, 190, 150): [Color(130, 170, 130 ), Color(160, 210, 170)],
+    Color(225, 250, 225): [Color(205, 230, 200), Color(244, 255, 250)],
+    Color(243,225, 194): [Color(210, 210, 170), Color(255, 245, 210)]
 }
 def get_index(image, row, col):
     return (row * image.step) + (3 * col)
