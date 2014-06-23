@@ -52,7 +52,11 @@ class Localizer(object):
     def process_image(self, image):
         print "Processing image"
         obj_colors = Localizer.obj_colors
-
+        # todo: Make this cleaner..
+        self.obj_blobs = {}
+        self.blobs = []
+        self.unprocessed_blobs = []
+        self.obj_centers = {}
         groups = group_colors(image, obj_colors)
 
         self.obj_blobs = groups
