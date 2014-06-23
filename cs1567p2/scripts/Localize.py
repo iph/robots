@@ -15,7 +15,7 @@ kinect2pub = None
 top_mask = Image()
 mid_mask = Image()
 robot_centers = []
-FOO = False
+foo = [False, False, False]
 CLUSTER_POINT_THRESHOLD = 90
 
 # TODO: use localizer with ros callbacks
@@ -104,16 +104,6 @@ class Localizer(object):
         self.obj_centers = obj_centers  
         print "Finished processing cloud"    
 
-def IMAPICKLE(image):
-    global FOO
-    if FOO:
-        return
-
-    output = open('data.img', 'wb')
-    pickle.dump(image, output)
-    output.close()
-    print "Done"
-    FOO = True
 
 def send_mask(image, points):
     mask = Image()  
@@ -233,6 +223,34 @@ def mid_cloud_callback(message):
     except StopIteration: 
         print "2 complete"
 
+def pickled_func(kin_num):
+    def inner_func(image):
+        global foo
+        if foo[kin_num-1]:
+            return
+
+        output = open('data' + str(kin_num) + '.img', 'wb')
+        pickle.dump(image, output)
+        output.close()
+        print "Done", kin_num
+        foo[kin_num-1] = True
+
+    return inner_func
+
+def pc_func(kin_num):
+    def inner_func(image):
+        global foo
+        if foo[kin_num-1]:
+            return
+
+        output = open('pc' + str(kin_num) + '.img', 'wb')
+        pickle.dump(image, output)
+        output.close()
+        print "Done", kin_num
+        foo[kin_num-1] = True
+
+    return inner_func
+
 def initialize():
     global kinect1pub
     global kinect2pub
@@ -245,13 +263,16 @@ def initialize():
     #rospy.Subscriber("/kinect1/rgb/image_color", Image, top_image_callback)
     #rospy.Subscriber("/kinect1/depth_registered/points", PointCloud2, top_cloud_callback)
     #rospy.Subscriber("/kinect2/rgb/image_color", Image, mid_image_callback)
-    #rospy.Subscriber("/kinect2/depth_registered/points", PointCloud2, mid_cloud_callback)
+    rospy.Subscriber("/kinect1/depth_registered/points", PointCloud2, pc_func(1))
+    rospy.Subscriber("/kinect2/depth_registered/points", PointCloud2, pc_func(2))
+    rospy.Subscriber("/kinect3/depth_registered/points", PointCloud2, pc_func(3))
     localizer1 = Localizer()
     #rospy.Subscriber("/kinect1/rgb/image_color", Image, localizer1.process_image)
-    rospy.Subscriber("/kinect1/rgb/image_color", Image, IMAPICKLE)
+    #rospy.Subscriber("/kinect1/rgb/image_color", Image, pickled_func(1))
+    #rospy.Subscriber("/kinect2/rgb/image_color", Image, pickled_func(2))
+    #rospy.Subscriber("/kinect3/rgb/image_color", Image, pickled_func(3))
+
     #rospy.Subscriber("/kinect1/depth_registered/points", PointCloud2, localizer1.process_cloud)
-    blue_close = Color(143, 183, 220)
-    print label_color(blue_close, Localizer.obj_colors)
     rospy.spin()
 
 if __name__ == "__main__":
