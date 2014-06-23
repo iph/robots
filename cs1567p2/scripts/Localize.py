@@ -114,21 +114,22 @@ class Localizer(object):
         clusters = []
         for color_key in groups:
             all_points = all_points | groups[color_key]
-            clusters.extend(cluster_points(groups[color_key]))
+            clusters = cluster_points(groups[color_key])
+            for cluster in clusters:
+                if len(cluster) > CLUSTER_POINT_THRESHOLD  and len(cluster) < CLUSTER_POINT_CEILING:
+                    blob = Blob(cluster, image)
+                    blob.color = color_key
+                    self.blobs.append(blob)
+                    self.unprocessed_blobs.append(blob)
+                    print "Blob: ", len(blob.points), " color: ", Localizer.color_names[blob.color]
         print "Done clustering.."
 
-        for cluster in clusters:
-            if len(cluster) > CLUSTER_POINT_THRESHOLD  and len(cluster) < CLUSTER_POINT_CEILING:
-                blob = Blob(cluster, image)
-                blob.color = label_color(blob.color, obj_colors)
-                self.blobs.append(blob)
-                self.unprocessed_blobs.append(blob)
-                print "Blob: ", len(blob.points), " color: ", Localizer.color_names[blob.color]
+
 
         filtered_points = set()
         for blob in self.blobs:
             filtered_points = filtered_points | blob.points
-            
+        send_mask(imgur, filtered_points)
         print "Finished processing image"
         #self.obj_centers = centers
 
@@ -146,7 +147,9 @@ class Localizer(object):
                                          skip_nans=True, uvs=blob.points)
             try:
                 point = next(point_iter)
-                while point != None:
+                while True:
+                    if point == None:
+                        continue
                     points.append(Point(point[0], point[1]))
                     point = next(point_iter)
             except StopIteration:
@@ -173,7 +176,7 @@ class Localizer(object):
             filtered_points = filtered_points | robot.dir_blob.points
             filtered_points = filtered_points | robot.identifier_blob.points
         self.master.update(robots, self.ident)
-        send_mask(imgur, filtered_points)
+        #send_mask(imgur, filtered_points)
 
 def classify_blobs(blobs):
     dir_blobs = []
@@ -238,24 +241,34 @@ def initialize():
     locpub = rospy.Publisher("/rosie/location",LocationList) #publish your locations
     kinect1pub = rospy.Publisher("/rosie/mask",Image) #test your mask
     kinect2pub = rospy.Publisher("/rosie/maskz",Image)
-    #rospy.Subscriber("/kinect1/rgb/image_color", Image, process_image)
-    #rospy.Subscriber("/kinect1/rgb/image_color", Image, top_image_callback)
-    #rospy.Subscriber("/kinect1/depth_registered/points", PointCloud2, top_cloud_callback)
-    #rospy.Subscriber("/kinect2/rgb/image_color", Image, mid_image_callback)
-    #rospy.Subscriber("/kinect2/depth_registered/points", PointCloud2, mid_cloud_callback)
-    local2 = (.15485772525065952, 0.8954903004095727)
-    local1 = (0.0, 0.0)
+
+
     localizer1 = Localizer(coordinator)
+    localizer2 = Localizer(coordinator)
     
-    
-    #    rospy.Subscriber("/kinect2/rgb/image_color", Image, localizer1.process_image)
-    #    rospy.Subscriber("/kinect2/depth_registered/points", PointCloud2, localizer1.process_cloud)
+    rospy.Subscriber("/kinect2/rgb/image_color", Image, localizer1.process_image)
+    rospy.Subscriber("/kinect2/depth_registered/points", PointCloud2, localizer1.process_cloud)
+
+    rospy.Subscriber("/kinect3/rgb/image_color", Image, localizer2.process_image)
+    rospy.Subscriber("/kinect3/depth_registered/points", PointCloud2, localizer2.process_cloud)
+
+
     input = open("data2.img", "rb")
     input2 = open("pc2.img", "rb")
     data = pickle.load(input)
     data2 = pickle.load(input2)
+
     localizer1.process_image(data)
     localizer1.process_cloud(data2)
+
+    input = open("data3.img", "rb")
+    input2 = open("pc3.img", "rb")
+    data3 = pickle.load(input)
+    data4 = pickle.load(input2)
+
+
+    localizer2.process_image(data3)
+    localizer2.process_cloud(data4)
     rospy.spin()
 
 if __name__ == "__main__":
