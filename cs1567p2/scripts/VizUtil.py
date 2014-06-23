@@ -1,7 +1,7 @@
 from collections import namedtuple
 import rospy
 from copy import deepcopy
- 
+import sys
 
 Point = namedtuple('Point', ['x', 'y'])
 Color = namedtuple('Color', ['r', 'g', 'b'])
@@ -9,6 +9,13 @@ Pixel = namedtuple('Pixel', ['point', 'color'])
 
 def get_index(image, row, col):
     return (row * image.step) + (3 * col)
+
+def label_color(color, color_choices):
+    min_key = lambda other: abs(color.r - other.r) + abs(color.g - other.g) + abs(color.b - other.b)
+    return min(color_choices, key = min_key)
+    
+
+    
 
 def probe_color(image, row, col):
     """Returns the color of the picture at row, col in the image."""

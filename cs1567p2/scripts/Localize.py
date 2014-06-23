@@ -25,13 +25,13 @@ CLUSTER_POINT_THRESHOLD = 90
 class Localizer(object):
     # TODO: put color filters here
     obj_colors = [
-#        Color(214, 185, 146), # Shit stain brown
+        Color(214, 185, 146), # Shit stain brown
         Color(244, 243, 240), # White for cross
         Color(209, 243, 210), # Neon construction green.
         Color(160, 188, 232), # Blue
-#        Color(240, 205, 175), 
-#        Color(235, 165, 180), 
-#        Color(250, 232, 195)
+        Color(240, 205, 175), 
+        Color(235, 165, 180), 
+        Color(250, 232, 195)
 ]
     dir_color = None
 
@@ -39,6 +39,7 @@ class Localizer(object):
         super(Localizer, self).__init__()
         self.obj_blobs = {}
         self.blobs = []
+        self.unprocessed_blobs = []
         self.obj_centers = {}
         #self.dir_blobs = []
 
@@ -58,32 +59,37 @@ class Localizer(object):
             all_points = all_points | groups[color_key]
         clusters = cluster_points(all_points)
         print "Done clustering.."
+
         for cluster in clusters:
             if len(cluster) > CLUSTER_POINT_THRESHOLD:
-                self.blobs.append(Blob(cluster, image))
-        
+                blob = Blob(cluster, image)
+                print "color before: ", blob.color
+                blob.color = label_color(blob.color, obj_colors)
+                self.blobs.append(blob)
+                self.unprocessed_blobs.append(blob)
+                print "color: ", blob.color
+
         filtered_points = set()
         for blob in self.blobs:
-            print "Color: ", blob.color, " Center: ", blob.center, " points: ", len(blob.points)
             filtered_points = filtered_points | blob.points
-
+            
         send_mask(image, filtered_points)
         print "Finished processing image"
 
         #self.obj_centers = centers
 
     def process_cloud(self, cloud):
-        if not self.obj_blobs:
+        if not self.unprocessed_blobs:
             return
         print "Processing cloud"
         obj_centers = {}
 
         obj_blobs = self.obj_blobs
-        for color_key in obj_blobs:
+        for blob in self.unprocessed_blobs:
             
             points = []
             point_iter = pc2.read_points(cloud, field_names=None,\
-                                skip_nans=True, uvs=obj_blobs[color_key])
+                                         skip_nans=True, uvs=blob.points)
             try:
                 point = next(point_iter)
                 while point != None:
@@ -91,12 +97,9 @@ class Localizer(object):
                     point = next(point_iter)
             except StopIteration:
                 pass
+            blob.set_center(midpoint_2d(points))
 
-            obj_centers[color_key] = midpoint_2d(points)
-
-        for color_key in obj_centers:
-            print "Color: ", color_key, " Center: " , obj_centers[color_key]
-
+        self.unprocessed_blobs = []
         self.obj_centers = obj_centers  
         print "Finished processing cloud"    
 
@@ -118,11 +121,6 @@ def send_mask(image, points):
                 mask.data[index + 1] = chr(0)
                 mask.data[index + 2] = chr(0)
 
-            else:
-                index = get_index(image, row, col)
-                mask.data[index] = chr(201)
-                mask.data[index + 1] = chr(99)
-                mask.data[index + 2] = chr(255)
     mask.data = "".join(mask.data)
     global kinect1pub
     kinect1pub.publish(mask)
@@ -242,7 +240,8 @@ def initialize():
     data = pickle.load(input)
     localizer1.process_image(data)
     #rospy.Subscriber("/kinect1/depth_registered/points", PointCloud2, localizer1.process_cloud)
-    
+    blue_close = Color(143, 183, 220)
+    print label_color(blue_close, Localizer.obj_colors)
     rospy.spin()
 
 if __name__ == "__main__":
