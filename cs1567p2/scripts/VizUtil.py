@@ -1,22 +1,38 @@
 from collections import namedtuple
 import rospy
- 
+from copy import deepcopy
+import sys
 
 Point = namedtuple('Point', ['x', 'y'])
 Color = namedtuple('Color', ['r', 'g', 'b'])
 Pixel = namedtuple('Pixel', ['point', 'color'])
 
+obj_threshold = {
+    Color(160, 188, 232): [Color(135, 181, 210), Color(170, 205, 245)],
+    Color(235, 158, 180): [Color(220, 110, 140), Color(255, 210, 220)],
+    Color(161, 137, 204): [Color(130, 100, 170), Color(190, 180, 230)],
+    Color(146, 190, 150): [Color(130, 170, 130 ), Color(160, 210, 170)],
+    Color(243,225, 194): [Color(210, 210, 170), Color(255, 245, 210)]
+}
 def get_index(image, row, col):
     return (row * image.step) + (3 * col)
+
+def label_color(color, color_choices):
+    min_key = lambda other: abs(color.r - other.r) + abs(color.g - other.g) + abs(color.b - other.b)
+    return min(color_choices, key = min_key)
+    
+
+    
 
 def probe_color(image, row, col):
     """Returns the color of the picture at row, col in the image."""
 
     index = get_index(image, row, col)
-    image_matrix = list(image.data)
+    image_matrix = image.data
     return Color(ord(image_matrix[index + 2]), ord(image_matrix[index + 1]),\
                  ord(image_matrix[index]))
 
+# Todo: Might not need this anymore.
 def midpoint_2d(points):
     """Computes center of finite set of points in 2d space
        Returns a tuple (center_x, center_y)"""
@@ -34,11 +50,12 @@ def midpoint_2d(points):
 
     return (x_sum / n, y_sum / n)
 
-def color_match(color, target, threshold=20):
+def color_match(target, color, threshold=30):
     """Returns true if color is near target, within a certain threshold"""
-    return abs(color.r - target.r) < threshold\
-           and abs(color.b - target.b) < threshold\
-           and abs(color.g - target.g) < threshold
+    global obj_threshold
+    return (obj_threshold[target][0].r < color.r and color.r < obj_threshold[target][1].r 
+    and obj_threshold[target][0].g < color.g and color.g < obj_threshold[target][1].g 
+    and obj_threshold[target][0].b < color.b and color.b < obj_threshold[target][1].b )
 
 def group_colors(image, colors):
     """Buckets all of the points in the image that match one of the given 
@@ -53,7 +70,8 @@ def group_colors(image, colors):
 
     # convert image data to list
     image_matrix = image.data
-
+    #image_data = bytes(image.data)
+    #image_matrix = image_data
     for row in xrange(image.height):
         for col in xrange(image.width):
             # each row is message.step long, each element is 3 bytes
@@ -67,18 +85,18 @@ def group_colors(image, colors):
                 if color_match(color, pixel_color):
                     color_dict[color].add(Point(col, row))
                     break
-
+    print "Done grouping.."
     return color_dict
 
 def cluster_points(points):
     """Takes a set of points and clusters the adjacent points into separate 
        lists. Returns a list of sets of points, each set defining a cluster"""
     clusters = []
+    points = deepcopy(points)
     while len(points) > 0:
         # grab a random point and grow it
         cluster = grow_cluster(points)
         clusters.append(cluster)
-
     return clusters
 
 def grow_cluster(points):
