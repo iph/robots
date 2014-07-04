@@ -1,5 +1,0 @@
-int64 col
-int64 row
-int64 direction
----
-int8 wall
