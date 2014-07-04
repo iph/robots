@@ -57,10 +57,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate services in the 'srv' folder
  add_service_files(
    FILES
-   MakeNewMaze.srv
-   GetMazeWall.srv
-   GetNextGoal.srv
-   GetCommand.srv
+   ConstantCommand.srv
  )
 
 ## Generate actions in the 'action' folder
@@ -89,7 +86,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES cs1567p3
+#  LIBRARIES cs1567p1
 CATKIN_DEPENDS message_runtime kobuki_node roscpp rospy std_msgs std_srvs geometry_msgs
 #  DEPENDS system_lib
 )
@@ -106,19 +103,19 @@ include_directories(
 )
 
 ## Declare a cpp library
-# add_library(cs1567p3
-#   src/${PROJECT_NAME}/cs1567p3.cpp
+# add_library(cs1567p1
+#   src/${PROJECT_NAME}/cs1567p1.cpp
 # )
 
 ## Declare a cpp executable
-# add_executable(cs1567p3_node src/cs1567p3_node.cpp)
+# add_executable(cs1567p1_node src/cs1567p1_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(cs1567p3_node cs1567p3_generate_messages_cpp)
+# add_dependencies(cs1567p1_node cs1567p1_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(cs1567p3_node
+# target_link_libraries(cs1567p1_node
 #   ${catkin_LIBRARIES}
 # )
 
@@ -137,7 +134,7 @@ include_directories(
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS cs1567p3 cs1567p3_node
+# install(TARGETS cs1567p1 cs1567p1_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -162,7 +159,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_cs1567p3.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_cs1567p1.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

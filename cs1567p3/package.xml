@@ -2,7 +2,7 @@
 <package>
   <name>cs1567p3</name>
   <version>0.0.0</version>
-  <description>The cs1567p3 package</description>
+  <description>The cs1567p1 package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/cs1567p3</url> -->
+  <!-- <url type="website">http://wiki.ros.org/cs1567p1</url> -->
 
 
   <!-- Author tags are optional, mutiple are allowed, one per tag -->
